@@ -19,40 +19,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from .nest.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .nest.fx_features import register_notrace_function
-from .nest.helpers import build_model_with_cfg, named_apply
-from .nest.layers import PatchEmbed, Mlp, DropPath, create_classifier, trunc_normal_
+from .nest.helpers import named_apply
+from .nest.layers import Mlp, DropPath, create_classifier, trunc_normal_
 from .nest.layers import _assert
 from .nest.layers import create_conv3d, create_pool3d, to_ntuple
-from .nest.registry import register_model
 from .patchEmbed3D import PatchEmbed3D
-_logger = logging.getLogger(__name__)
-
-
-def _cfg(url='', **kwargs):
-    return {
-        'url': url,
-        'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': [14, 14],
-        'crop_pct': .875, 'interpolation': 'bicubic', 'fixed_input_size': True,
-        'mean': IMAGENET_DEFAULT_MEAN, 'std': IMAGENET_DEFAULT_STD,
-        'first_conv': 'patch_embed.proj', 'classifier': 'head',
-        **kwargs
-    }
-
-
-default_cfgs = {
-    # (weights from official Google JAX impl)
-    'nest_base': _cfg(),
-    'nest_small': _cfg(),
-    'nest_tiny': _cfg(),
-    'jx_nest_base': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vt3p-weights/jx_nest_base-8bc41011.pth'),
-    'jx_nest_small': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vt3p-weights/jx_nest_small-422eaded.pth'),
-    'jx_nest_tiny': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vt3p-weights/jx_nest_tiny-e3428fb9.pth'),
-}
 
 
 class Attention(nn.Module):
@@ -429,98 +401,3 @@ def _init_nest_weights(module: nn.Module, name: str = '', head_bias: float = 0.)
         nn.init.zeros_(module.bias)
         nn.init.ones_(module.weight)
 
-
-def resize_pos_embed(posemb, posemb_new):
-    """
-    Rescale the grid of position embeddings when loading from state_dict
-    Expected shape of position embeddings is (1, T, N, C), and considers only square images
-    """
-    _logger.info('Resized position embedding: %s to %s', posemb.shape, posemb_new.shape)
-    seq_length_old = posemb.shape[2]
-    num_blocks_new, seq_length_new = posemb_new.shape[1:3]
-    size_new = int(math.sqrt(num_blocks_new*seq_length_new))
-    # First change to (1, C, H, W)
-    posemb = deblockify(posemb, int(math.sqrt(seq_length_old))).permute(0, 3, 1, 2)
-    posemb = F.interpolate(posemb, size=[size_new, size_new], mode='bicubic', align_corners=False)
-    # Now change to new (1, T, N, C)
-    posemb = blockify(posemb.permute(0, 2, 3, 1), int(math.sqrt(seq_length_new)))
-    return posemb
-
-
-def checkpoint_filter_fn(state_dict, model):
-    """ resize positional embeddings of pretrained weights """
-    pos_embed_keys = [k for k in state_dict.keys() if k.startswith('pos_embed_')]
-    for k in pos_embed_keys:
-        if state_dict[k].shape != getattr(model, k).shape:
-            state_dict[k] = resize_pos_embed(state_dict[k], getattr(model, k))
-    return state_dict
-
-
-def _create_nest(variant, pretrained=False, default_cfg=None, **kwargs):
-    default_cfg = default_cfg or default_cfgs[variant]
-    model = build_model_with_cfg(
-        Nest, variant, pretrained,
-        default_cfg=default_cfg,
-        feature_cfg=dict(out_indices=(0, 1, 2), flatten_sequential=True),
-        pretrained_filter_fn=checkpoint_filter_fn,
-        **kwargs)
-
-    return model
-
-
-@register_model
-def nest_base(pretrained=False, **kwargs):
-    """ Nest-B @ 224x224
-    """
-    model_kwargs = dict(
-        embed_dims=(128, 256, 512), num_heads=(4, 8, 16), depths=(2, 2, 20), **kwargs)
-    model = _create_nest('nest_base', pretrained=pretrained, **model_kwargs)
-    return model
-
-
-@register_model
-def nest_small(pretrained=False, **kwargs):
-    """ Nest-S @ 224x224
-    """
-    model_kwargs = dict(embed_dims=(96, 192, 384), num_heads=(3, 6, 12), depths=(2, 2, 20), **kwargs)
-    model = _create_nest('nest_small', pretrained=pretrained, **model_kwargs)
-    return model
-
-
-@register_model
-def nest_tiny(pretrained=False, **kwargs):
-    """ Nest-T @ 224x224
-    """
-    model_kwargs = dict(embed_dims=(96, 192, 384), num_heads=(3, 6, 12), depths=(2, 2, 8), **kwargs)
-    model = _create_nest('nest_tiny', pretrained=pretrained, **model_kwargs)
-    return model
-
-
-@register_model
-def jx_nest_base(pretrained=False, **kwargs):
-    """ Nest-B @ 224x224, Pretrained weights converted from official Jax impl.
-    """
-    kwargs['pad_type'] = 'same'
-    model_kwargs = dict(embed_dims=(128, 256, 512), num_heads=(4, 8, 16), depths=(2, 2, 20), **kwargs)
-    model = _create_nest('jx_nest_base', pretrained=pretrained, **model_kwargs)
-    return model
-
-
-@register_model
-def jx_nest_small(pretrained=False, **kwargs):
-    """ Nest-S @ 224x224, Pretrained weights converted from official Jax impl.
-    """
-    kwargs['pad_type'] = 'same'
-    model_kwargs = dict(embed_dims=(96, 192, 384), num_heads=(3, 6, 12), depths=(2, 2, 20), **kwargs)
-    model = _create_nest('jx_nest_small', pretrained=pretrained, **model_kwargs)
-    return model
-
-
-@register_model
-def jx_nest_tiny(pretrained=False, **kwargs):
-    """ Nest-T @ 224x224, Pretrained weights converted from official Jax impl.
-    """
-    kwargs['pad_type'] = 'same'
-    model_kwargs = dict(embed_dims=(96, 192, 384), num_heads=(3, 6, 12), depths=(2, 2, 8), **kwargs)
-    model = _create_nest('jx_nest_tiny', pretrained=pretrained, **model_kwargs)
-    return model

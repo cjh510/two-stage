@@ -3,10 +3,10 @@ import torch.nn as nn
 from monai.networks.layers import trunc_normal_
 from torch_geometric.nn import SAGPooling, TransformerConv
 from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
-from Src.networks.unest_base_patch_classes import Dual_UNseT
+from stage1.Src.unest_base_patch_classes import Dual_UNseT
 from torch_geometric.data import Data, Batch
 import yaml
-from Src.Attention import FusionAttentionBlock, Attention_ori
+from Attention import FusionAttentionBlock, Attention_ori
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 

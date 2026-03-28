@@ -297,7 +297,7 @@ class UNesT(nn.Module):
 
 if __name__ == '__main__':
     import yaml
-    yaml_file = 'Src/yaml/mulorganseg_base.yaml'
+    yaml_file = 'yaml/mulorganseg_base.yaml'
     with open(yaml_file, 'r') as f:
         cfig = yaml.safe_load(f)
     x = torch.randn([1, 1, 128, 128, 128])

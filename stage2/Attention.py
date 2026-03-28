@@ -111,7 +111,6 @@ class FusionAttentionBlock(nn.Module):
 
 
     def forward(self, img_emb: Tensor, mask_emb: Tensor) -> Tuple[ Tensor]:
-        # Self attention block #最开始的时候 queries=query_pe
         #queries: Tensor, keys: Tensor
         queries = mask_emb
         attn_out = self.self_attn(queries)  #小图
@@ -120,10 +119,10 @@ class FusionAttentionBlock(nn.Module):
         queries = self.norm1(queries)
 
         # Cross attention block, mask attending to image embedding
-        q = queries #1,5,256
-        k = img_emb  # v是值，因此用keys？
+        q = queries
+        k = img_emb
         input_x = torch.cat((q, k), dim=1)  # 2 50 768
-        attn_out = self.cross_attn_mask_to_image(input_x) #TODO 要不要mask呢 交叉的时候 先不用试试
+        attn_out = self.cross_attn_mask_to_image(input_x)
         queries = queries + attn_out
         queries = self.norm2(queries)
 
