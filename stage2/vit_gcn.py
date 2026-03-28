@@ -3,7 +3,7 @@ import torch.nn as nn
 from monai.networks.layers import trunc_normal_
 from torch_geometric.nn import SAGPooling, TransformerConv
 from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
-from stage1.Src.unest_base_patch_classes import Dual_UNseT
+from stage1.unest_base_patch_classes import Dual_UNseT
 from torch_geometric.data import Data, Batch
 import yaml
 from Attention import FusionAttentionBlock, Attention_ori
@@ -79,7 +79,7 @@ class GraphNet(nn.Module):
 class gcn_net(nn.Module):
     def __init__(self, num_classes, changel):
         super().__init__()
-        yaml_file = '/Src/yaml/mulorganseg_base.yaml'
+        yaml_file = './stage1/yaml/mulorganseg_base.yaml'
         with open(yaml_file, 'r') as f:
             cfig = yaml.safe_load(f)
         self.device = device

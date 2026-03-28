@@ -2,9 +2,9 @@ from typing import Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from Src.unest_block import UNesTConvBlock, UNestUpBlock, CBAM, UNesTBlock_v1
+from unest_block import UNesTConvBlock, UNestUpBlock, CBAM, UNesTBlock_v1
 from monai.networks.blocks import Convolution
-from Src.nest_transformer_3D import NestTransformer3D
+from nest_transformer_3D import NestTransformer3D
 from monai.networks.blocks.dynunet_block import UnetOutBlock
 
 
