@@ -1,0 +1,13 @@
+{
+  'model_type': 'base',
+  'patch_size': 4,
+  'depth': [2, 2, 8],
+  'embed_dims': [128, 256, 512],
+  'num_heads': [4, 8, 16],
+  'num_classes': 2,
+  'pos_embedd': 'perceptron',
+  'conv_block': True,
+  'res_block': True,
+  'use_pretrained': False,
+  'img_size': 128,
+}
