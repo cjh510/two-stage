@@ -1,1 +1,1 @@
-# Two-Stage Framework for Synergistic Modeling of Primary Tumor-Lymph Node Interactions Enhances Metastasis Prediction in Head and Neck Cancer Using CT Imaging
+# Lymph Node Metastasis Detection by Tumor–Node Joint Modeling in Head and Neck Cancer
